@@ -1,0 +1,25 @@
+# Python & Virtual Environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+
+# IDEs & System Files
+.vscode/
+.idea/
+.DS_Store
+
+# Temporary & Dataflow Build Artifacts
+*.tar.gz
+*.tgz
+*.log
+
+# Sensitive Credentials & Keys
+*.json
+!pipeline/metadata.json
+!monitoring/dashboard.json
+*.pem
+*.key
