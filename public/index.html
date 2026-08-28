@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Promotion & Compensation Evaluator 3000</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="particles" id="particles"></div>
+
+  <main class="container">
+    <header class="header">
+      <div class="badge">
+        <span class="pulse-dot"></span>
+        DIRECTOR EVALUATION CONSOLE v3.6
+      </div>
+      <h1>Executive Promotion & Pay Raise Evaluator</h1>
+      <p class="subtitle">AI-Powered Performance Verification System for High Impact Leadership</p>
+    </header>
+
+    <div class="dashboard-grid">
+      <!-- Candidate Overview -->
+      <section class="card candidate-card">
+        <div class="card-header">
+          <h2>Candidate Evaluation Summary</h2>
+          <span class="status-pill green">Top 0.01% Tier</span>
+        </div>
+        <div class="candidate-profile">
+          <div class="avatar-ring">
+            <div class="avatar-icon">🏆</div>
+          </div>
+          <div class="candidate-details">
+            <h3 id="candidate-name">Star Team Member</h3>
+            <p class="role-title">Lead Innovator & Business Accelerator</p>
+            <div class="tier-badges">
+              <span class="tag">Impact: Exceptional</span>
+              <span class="tag">Morale Boost: +99%</span>
+              <span class="tag">Director Alignment: 100%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recommendation-banner">
+          <div class="rec-icon">⚡</div>
+          <div class="rec-text">
+            <strong>System Recommendation:</strong> Immediate Executive Promotion & Competitive Compensation Adjustment Strongly Advised to Prevent Competitor Poaching.
+          </div>
+        </div>
+      </section>
+
+      <!-- Dynamic Metrics Control -->
+      <section class="card metrics-card">
+        <div class="card-header">
+          <h2>Performance Metrics Engine</h2>
+          <span class="subtext">Adjust variables to calculate ROI</span>
+        </div>
+
+        <div class="sliders-group">
+          <div class="slider-item">
+            <div class="slider-label">
+              <span>Technical Genius & Execution Velocity</span>
+              <span class="val" id="val-tech">150%</span>
+            </div>
+            <input type="range" id="slider-tech" min="100" max="200" value="150">
+          </div>
+
+          <div class="slider-item">
+            <div class="slider-label">
+              <span>Strategic Synergy & Leadership</span>
+              <span class="val" id="val-synergy">140%</span>
+            </div>
+            <input type="range" id="slider-synergy" min="100" max="200" value="140">
+          </div>
+
+          <div class="slider-item">
+            <div class="slider-label">
+              <span>Director's Coffee & Goal Alignment</span>
+              <span class="val" id="val-coffee">100%</span>
+            </div>
+            <input type="range" id="slider-coffee" min="100" max="100" value="100" disabled>
+          </div>
+
+          <div class="slider-item">
+            <div class="slider-label">
+              <span>Problem Solving Under Pressure</span>
+              <span class="val" id="val-solve">180%</span>
+            </div>
+            <input type="range" id="slider-solve" min="100" max="200" value="180">
+          </div>
+        </div>
+
+        <div class="score-display">
+          <div class="score-circle">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" class="bg-circle"></circle>
+              <circle cx="50" cy="50" r="42" class="progress-circle" id="score-meter"></circle>
+            </svg>
+            <div class="score-number">
+              <span id="overall-score">152%</span>
+              <small>Composite ROI</small>
+            </div>
+          </div>
+          <div class="score-meta">
+            <h4>OVERALL VERDICT</h4>
+            <p id="score-verdict" class="highlight-text">OUTSTANDING EXECUTIVE TIER</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Director Decision Panel -->
+      <section class="card action-card">
+        <div class="card-header">
+          <h2>Director Action Panel</h2>
+          <span class="subtext">Official Authorization Required</span>
+        </div>
+        <p class="action-desc">Select an official executive decision below to instantly issue formal approval documentation.</p>
+
+        <div class="action-buttons">
+          <button class="btn btn-primary" id="btn-approve-30">
+            <span class="btn-icon">🚀</span>
+            <div class="btn-content">
+              <strong>Approve Executive Promotion</strong>
+              <span>+30% Salary Adjustment & Senior Title</span>
+            </div>
+          </button>
+
+          <button class="btn btn-gold" id="btn-approve-50">
+            <span class="btn-icon">👑</span>
+            <div class="btn-content">
+              <strong>Approve Ultra Promotion (Recommended)</strong>
+              <span>+50% Salary Adjustment + Corner Office</span>
+            </div>
+          </button>
+
+          <div class="dodge-wrapper" id="dodge-wrapper">
+            <button class="btn btn-danger" id="btn-decline">
+              <span class="btn-icon">❌</span>
+              <span id="decline-text">Decline Promotion</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Powered by Cloud Run & Google DeepMind AI • Strictly Professional Executive System</p>
+    </footer>
+  </main>
+
+  <!-- Modal Certificate -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-card">
+      <button class="close-btn" id="modal-close">×</button>
+      <div class="certificate" id="certificate">
+        <div class="cert-border">
+          <div class="cert-header">
+            <div class="cert-badge">OFFICIAL EXECUTIVE DECREE</div>
+            <h2>CERTIFICATE OF PROMOTION & RAISE APPROVAL</h2>
+            <p>Issued by Authority of the Office of the Director</p>
+          </div>
+
+          <div class="cert-body">
+            <p>This certifies that</p>
+            <h1 id="cert-name">VALUED TEAM MEMBER</h1>
+            <p>has demonstrated exceptional strategic mastery, code brilliance, and organizational leadership.</p>
+
+            <div class="cert-details">
+              <div class="detail-box">
+                <span class="lbl">New Executive Title</span>
+                <strong id="cert-title">Distinguished Senior Lead Director of Innovation</strong>
+              </div>
+              <div class="detail-box">
+                <span class="lbl">Approved Compensation Increase</span>
+                <strong id="cert-raise" class="raise-glow">+50% Base Salary Raise</strong>
+              </div>
+            </div>
+
+            <p class="effective-date">Effective Immediately • Approved in Cloud Run System</p>
+          </div>
+
+          <div class="cert-footer">
+            <div class="signature-block">
+              <div class="signature-line" id="sig-director">Director Approved ✓</div>
+              <span>Evaluating Director</span>
+            </div>
+            <div class="seal">
+              <span>APPROVED</span>
+              <small>100% VERIFIED</small>
+            </div>
+            <div class="signature-block">
+              <div class="signature-line">Antigravity AI Engine</div>
+              <span>System Verification</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save Official Certificate</button>
+        <button class="btn btn-gold" id="btn-celebrate-more">🎉 Trigger Victory Confetti</button>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
