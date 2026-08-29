@@ -1,29 +1,33 @@
-#!/usr/bin/env bash
-# =============================================================================
-# GCP Resource Setup Script: Provision Buckets, BigQuery Datasets & Tables
-# =============================================================================
-set -euo pipefail
+#!/bin/bash
+set -e
 
-# Configuration Variables
-PROJECT_ID="${GCP_PROJECT_ID:-pradeep-demo-1}"
-REGION="${GCP_REGION:-US}"
-RAW_BUCKET="${RAW_DATA_BUCKET:-pradeep-demo-1-raw-data}"
-TEMP_BUCKET="${TEMP_BUCKET:-pradeep-demo-1-temp}"
+# Load environment variables or use generic defaults
+PROJECT_ID="${GCP_PROJECT_ID:-YOUR_GCP_PROJECT_ID}"
+REGION="${GCP_REGION:-us-central1}"
+RAW_BUCKET="${RAW_DATA_BUCKET:-YOUR_RAW_DATA_BUCKET}"
+TEMP_BUCKET="${TEMP_BUCKET:-YOUR_TEMP_BUCKET}"
 
-echo "=== 1. Setting Active GCP Project ==="
-gcloud config set project "${PROJECT_ID}"
+echo "========================================="
+echo "Setting up GCP Resources for Data Pipeline"
+echo "Project: $PROJECT_ID"
+echo "Region:  $REGION"
+echo "========================================="
 
-echo "=== 2. Creating Cloud Storage Landing & Temp Buckets ==="
-gcloud storage buckets create "gs://${RAW_BUCKET}" --project="${PROJECT_ID}" --location="${REGION}" || echo "Raw bucket already exists."
-gcloud storage buckets create "gs://${TEMP_BUCKET}" --project="${PROJECT_ID}" --location="${REGION}" || echo "Temp bucket already exists."
+# 1. Create Cloud Storage Buckets
+echo "[1/3] Creating GCS Buckets..."
+gcloud storage buckets create "gs://${RAW_BUCKET}" --project="${PROJECT_ID}" --location="${REGION}" 2>/dev/null || echo "Bucket gs://${RAW_BUCKET} already exists."
+gcloud storage buckets create "gs://${TEMP_BUCKET}" --project="${PROJECT_ID}" --location="${REGION}" 2>/dev/null || echo "Bucket gs://${TEMP_BUCKET} already exists."
 
-echo "=== 3. Initializing BigQuery Datasets & Tables ==="
-bq query \
-    --use_legacy_sql=false \
+# 2. Create BigQuery Dataset & Tables
+echo "[2/3] Provisioning BigQuery Dataset & Schemas..."
+bq mk --project_id="${PROJECT_ID}" --location="${REGION}" --dataset analytics_ds 2>/dev/null || echo "Dataset analytics_ds already exists."
+bq query --project_id="${PROJECT_ID}" --use_legacy_sql=false < sql/create_tables.sql
+
+# 3. Create Artifact Registry Repository for Dataflow Templates
+echo "[3/3] Creating Artifact Registry Repository..."
+gcloud artifacts repositories create dataflow-templates \
+    --repository-format=docker \
     --location="${REGION}" \
-    --project_id="${PROJECT_ID}" \
-    < sql/create_tables.sql
+    --project="${PROJECT_ID}" 2>/dev/null || echo "Artifact Registry repository already exists."
 
-echo "=== GCP Resource Setup Complete! ==="
-echo "Raw Data Bucket: gs://${RAW_BUCKET}"
-echo "Temp Bucket: gs://${TEMP_BUCKET}"
+echo "GCP Resource Setup Complete!"

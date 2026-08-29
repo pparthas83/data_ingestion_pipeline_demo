@@ -147,10 +147,10 @@ OK
 
 ### Step 1: Set Environment Variables
 ```bash
-export GCP_PROJECT_ID="pradeep-demo-1"
+export GCP_PROJECT_ID="your-gcp-project-id"
 export GCP_REGION="us-central1"
-export RAW_DATA_BUCKET="pradeep-demo-1-raw-data"
-export TEMP_BUCKET="pradeep-demo-1-temp"
+export RAW_DATA_BUCKET="your-raw-data-bucket"
+export TEMP_BUCKET="your-temp-bucket"
 export COMPOSER_DAG_BUCKET="gs://us-central1-my-composer-bucket/dags"  # Optional if using Composer
 ```
 
@@ -160,7 +160,7 @@ export COMPOSER_DAG_BUCKET="gs://us-central1-my-composer-bucket/dags"  # Optiona
 ```
 
 ### Step 3: Build & Stage Dataflow Flex Template
-This builds the Docker launcher image, pushes it to Artifact Registry (`us-central1-docker.pkg.dev/pradeep-demo-1/dataflow-templates/gcs-to-bq-etl:v1.0.0`), and uploads the Flex Template spec JSON to `gs://pradeep-demo-1-temp/templates/gcs_to_bq_template.json`:
+This builds the Docker launcher image, pushes it to Artifact Registry (`us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/dataflow-templates/gcs-to-bq-etl:v1.0.0`), and uploads the Flex Template spec JSON to `gs://${TEMP_BUCKET}/templates/gcs_to_bq_template.json`:
 ```bash
 ./scripts/build_and_deploy.sh
 ```
@@ -201,11 +201,11 @@ Once the Dataflow job status reaches **`JOB_STATE_DONE`**, verify row counts in 
 
 ```sql
 -- Query Target Table (Valid Rows)
-SELECT COUNT(1) AS valid_count FROM `pradeep-demo-1.analytics_ds.target_records`;
+SELECT COUNT(1) AS valid_count FROM `${GCP_PROJECT_ID}.analytics_ds.target_records`;
 
 -- Query DLQ Table (Corrupt Rows)
 SELECT raw_record, error_message, source_file, failed_at
-FROM `pradeep-demo-1.analytics_ds.target_records_dlq`
+FROM `${GCP_PROJECT_ID}.analytics_ds.target_records_dlq`
 ORDER BY failed_at DESC;
 ```
 
@@ -215,4 +215,4 @@ ORDER BY failed_at DESC;
 
 - [Implementation Plan](docs/implementation_plan.md): Technical architecture and BigQuery DDL schemas.
 - [Task Progress Checklist](docs/task.md): Component breakdown and verification steps.
-- [Verification Walkthrough](docs/walkthrough.md): Empirical proof of live Dataflow executions (`gcs-to-bq-etl-1787941124`) and unit test results.
+- [Verification Walkthrough](docs/walkthrough.md): Empirical proof of live Dataflow executions and unit test results.

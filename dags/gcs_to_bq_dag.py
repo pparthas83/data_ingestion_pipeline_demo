@@ -57,18 +57,18 @@ default_args = {
     'sla': timedelta(minutes=45),  # SLA Alert if DAG run takes > 45 minutes
 }
 
-# Environment & Variable Configuration (with fallbacks so DAG parses cleanly)
-GCP_PROJECT_ID = Variable.get("gcp_project_id", default_var="pradeep-demo-1")
+# Environment & Variable Configuration (parameterized with generic fallbacks)
+GCP_PROJECT_ID = Variable.get("gcp_project_id", default_var="YOUR_GCP_PROJECT_ID")
 GCP_REGION = Variable.get("gcp_region", default_var="us-central1")
-RAW_DATA_BUCKET = Variable.get("raw_data_bucket", default_var="pradeep-demo-1-raw-data")
-TEMP_BUCKET = Variable.get("temp_bucket", default_var="pradeep-demo-1-temp")
+RAW_DATA_BUCKET = Variable.get("raw_data_bucket", default_var="YOUR_RAW_DATA_BUCKET")
+TEMP_BUCKET = Variable.get("temp_bucket", default_var="YOUR_TEMP_BUCKET")
 FLEX_TEMPLATE_SPEC_GCS = Variable.get(
     "flex_template_spec_gcs",
-    default_var="gs://pradeep-demo-1-temp/templates/gcs_to_bq_template.json"
+    default_var=f"gs://{TEMP_BUCKET}/templates/gcs_to_bq_template.json"
 )
 DATAFLOW_SERVICE_ACCOUNT = Variable.get(
     "dataflow_service_account",
-    default_var="832497031659-compute@developer.gserviceaccount.com"
+    default_var="YOUR_SERVICE_ACCOUNT@YOUR_GCP_PROJECT.iam.gserviceaccount.com"
 )
 
 TARGET_DATASET = Variable.get("target_dataset", default_var="analytics_ds")
@@ -117,8 +117,8 @@ with DAG(
                     "stagingLocation": f"gs://{TEMP_BUCKET}/dataflow/staging",
                     "serviceAccountEmail": DATAFLOW_SERVICE_ACCOUNT,
                     "ipConfiguration": "WORKER_IP_PRIVATE",
-                    "network": Variable.get("vpc_network", default_var="pradeep-demo-vpc"),
-                    "subnetwork": Variable.get("vpc_subnetwork", default_var="regions/us-central1/subnetworks/pradeep-demo-vpc"),
+                    "network": Variable.get("vpc_network", default_var="default"),
+                    "subnetwork": Variable.get("vpc_subnetwork", default_var="regions/us-central1/subnetworks/default"),
                 },
             }
         },

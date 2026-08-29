@@ -33,10 +33,8 @@ OK
 ## 2. Live Cloud Execution Verification
 
 ### Dataflow Job Details
-- **Job Name**: `gcs-to-bq-etl-1787941124`
-- **Job ID**: `2026-08-28_11_18_46-13579482598464932234`
+- **Job Name**: `gcs-to-bq-etl-batch-run`
 - **Region**: `us-central1`
-- **Project**: `pradeep-demo-1`
 - **Execution Status**: **`JOB_STATE_DONE`**
 
 ---
@@ -44,9 +42,9 @@ OK
 ## 3. BigQuery Ingestion Results
 
 ```sql
-SELECT "Target Records" AS table_name, COUNT(1) AS count FROM `pradeep-demo-1.analytics_ds.target_records`
+SELECT "Target Records" AS table_name, COUNT(1) AS count FROM `<YOUR_PROJECT_ID>.analytics_ds.target_records`
 UNION ALL
-SELECT "DLQ Records" AS table_name, COUNT(1) AS count FROM `pradeep-demo-1.analytics_ds.target_records_dlq`;
+SELECT "DLQ Records" AS table_name, COUNT(1) AS count FROM `<YOUR_PROJECT_ID>.analytics_ds.target_records_dlq`;
 ```
 
 ### Table Row Counts
@@ -73,8 +71,8 @@ SELECT "DLQ Records" AS table_name, COUNT(1) AS count FROM `pradeep-demo-1.analy
 
 | `raw_record` | `error_message` | `source_file` | `failed_at` |
 | :--- | :--- | :--- | :--- |
-| `,2026-08-27 00:59:40,ELECTRONICS,100.50` | `Field 'id' cannot be empty` | `gs://pradeep-demo-1-raw-data/landing/20260827/*.csv` | `2026-08-28 18:24:33` |
-| `,2026-08-27 00:59:40,AUTOMOTIVE,100.50` | `Field 'id' cannot be empty` | `gs://pradeep-demo-1-raw-data/landing/20260827/*.csv` | `2026-08-28 18:24:33` |
+| `,2026-08-27 00:59:40,ELECTRONICS,100.50` | `Field 'id' cannot be empty` | `gs://<RAW_BUCKET>/landing/20260827/*.csv` | `2026-08-28 18:24:33` |
+| `,2026-08-27 00:59:40,AUTOMOTIVE,100.50` | `Field 'id' cannot be empty` | `gs://<RAW_BUCKET>/landing/20260827/*.csv` | `2026-08-28 18:24:33` |
 
 ---
 
@@ -85,7 +83,7 @@ SELECT "DLQ Records" AS table_name, COUNT(1) AS count FROM `pradeep-demo-1.analy
    - Dataflow worker VMs automatically install `gcs_etl` upon startup from GCS staging, preventing `ModuleNotFoundError`.
 
 2. **BigQuery IAM Permission**:
-   - Granted IAM role `roles/bigquery.jobUser` (`bigquery.jobs.create`) to `832497031659-compute@developer.gserviceaccount.com`, allowing worker batch file load jobs into BigQuery.
+   - Granted IAM role `roles/bigquery.jobUser` (`bigquery.jobs.create`) to Dataflow worker compute service account, allowing worker batch file load jobs into BigQuery.
 
 3. **Airflow DAG Compatibility**:
    - Updated `dags/gcs_to_bq_dag.py` parameter `schedule_interval` -> `schedule` and `wait_for_pipeline` -> `wait_until_finished` for modern Airflow / Composer compatibility.
