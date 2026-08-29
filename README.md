@@ -1,91 +1,218 @@
-# GCP Production Data Ingestion Pipeline
-**GCS to BigQuery Batch Pipeline via Cloud Composer, Dataflow Flex Templates & Enterprise Observability**
+# Enterprise GCP Data Ingestion Pipeline
 
-This repository provides an enterprise-ready starter template for ingesting batch data landing in Google Cloud Storage (GCS) into BigQuery using Apache Beam on Dataflow, orchestrated by Cloud Composer (Apache Airflow), complete with **production logging, custom metrics, SLA callbacks, and observability dashboards**.
+**GCS to BigQuery Batch ETL via Apache Beam (Dataflow Flex Template), Cloud Composer (Airflow), & Enterprise Observability**
+
+This repository provides an enterprise-ready, production-grade template for ingesting CSV batch data landing in Google Cloud Storage (GCS) into BigQuery using Apache Beam on Google Cloud Dataflow, orchestrated by Cloud Composer (Apache Airflow), complete with **Dead Letter Queue (DLQ) error isolation, automated unit testing, Cloud Monitoring dashboards, and post-ETL data quality auditing**.
 
 ---
 
-## 🏢 Architecture & Observability Overview
+## 🎯 Business Objective
 
+The primary objective of this pipeline is to ingest CSV transactions landing in GCS into BigQuery with **zero data loss**:
+* **Valid Records**: Filtered, validated, and streamed into a partitioned/clustered BigQuery target table (`analytics_ds.target_records`).
+* **Corrupt/Invalid Records**: Schema violations, invalid dates, negative amounts, or malformed rows are caught by `TaggedOutput` routing and safely written to a Dead Letter Queue table (`analytics_ds.target_records_dlq`) along with error messages and source metadata.
+* **Data Quality Gate**: The Airflow DAG audits the DLQ error count after each run and triggers an SLA failure alert if errors exceed a configurable threshold (`MAX_DLQ_THRESHOLD`).
+
+---
+
+## 🏗️ End-to-End Architecture
+
+```text
+                                ┌───────────────────────────────────┐
+                                │   GCS Raw Data Landing Bucket     │
+                                │   `gs://<bucket>/landing/YYYYMMDD`│
+                                └─────────────────┬─────────────────┘
+                                                  │
+                                                  ▼
+ ┌─────────────────────────┐           ┌────────────────────────────────────┐
+ │ Cloud Composer          │ ────────► │ GCS Sensor                         │
+ │ (Apache Airflow)        │           │ (Deferrable Non-Blocking Sensor)   │
+ └────────────┬────────────┘           └──────────────────┬─────────────────┘
+              │                                           │
+              ▼                                           ▼
+ ┌──────────────────────────────────────────────────────────────────────────┐
+ │ Dataflow Flex Template Job (Apache Beam Python Pipeline)                 │
+ │                                                                          │
+ │   CSV File ──► ParseAndValidateDoFn (Schema & Field Validation)          │
+ │                      ├── Valid Rows   ──► WriteToBigQuery (Target)        │
+ │                      └── Corrupt Rows ──► WriteToBigQuery (DLQ)           │
+ └───────────────────────────────┬──────────────────────────────────────────┘
+                                 │
+                 ┌───────────────┴───────────────┐
+                 ▼                               ▼
+ ┌───────────────────────────────┐   ┌───────────────────────────────┐
+ │ BigQuery Target Table         │   │ BigQuery DLQ Table            │
+ │ `analytics_ds.target_records` │   │ `analytics_ds.target_records` │
+ └───────────────────────────────┘   └───────────────┬───────────────┘
+                                                     │
+                                                     ▼
+                                     ┌───────────────────────────────┐
+                                     │ Airflow Data Quality Audit    │
+                                     │ (Fails if DLQ > Threshold)    │
+                                     └───────────────────────────────┘
 ```
-[ GCS Bucket ] (Landing CSV/JSON)
-      │
-      ▼
-[ Cloud Composer (Airflow) ] ── (Deferrable Sensor + Failure/SLA Callbacks)
-      │
-      ▼ (DataflowStartFlexTemplateOperator)
-[ Dataflow (Apache Beam) ] ──► (Beam Metric Counters & Structured JSON Logs)
-      ├──► Valid Records  ──► [ BigQuery Target Table ] (Partitioned & Clustered)
-      └──► Corrupt Records ─► [ BigQuery DLQ Table ] ──► [ Airflow Post-ETL DLQ Check ]
-                                                                  │
-                                                        (Exceeds Threshold?)
-                                                                  │
-                                                        [ Trigger SLA Alert ]
-
-[ Cloud Monitoring Dashboard ] ◄── (Beam Counters + Dataflow vCPU + BQ Write Rates)
-[ BigQuery Log Sink ] ◄─────────── (Cloud Logging Export: logs_ds.pipeline_audit_logs)
-```
-
-### Key Highlights
-* **Apache Beam Custom Telemetry**: Exposes `processed_records`, `valid_records`, and `dlq_records` metric counters directly to Cloud Monitoring.
-* **Airflow Failure & SLA Callbacks**: Configures `on_failure_callback` and `sla_miss_callback` to route incident alerts immediately.
-* **Post-ETL Data Quality Gate**: Includes an Airflow BigQuery validation task (`audit_dlq_quality_threshold`) that fails the pipeline if DLQ record count exceeds `MAX_DLQ_THRESHOLD`.
-* **Unified Observability Dashboard**: Custom Cloud Monitoring dashboard definition (`monitoring/dashboard.json`) visualizing Beam throughput, Dataflow CPU/memory, Composer DAG status, and BQ write rates.
-* **Cloud Logging Audit Sink**: Long-term audit trail exporting pipeline logs into BigQuery (`logs_ds.pipeline_audit_logs`).
 
 ---
 
 ## 📁 Repository Structure
 
-```
+```text
 .
+├── pipeline/                   # Apache Beam ETL Pipeline & Docker Setup
+│   ├── gcs_etl/
+│   │   ├── __init__.py
+│   │   └── transforms.py       # Custom DoFn CSV validation & TaggedOutput DLQ logic
+│   ├── main.py                 # Pipeline entrypoint with setup.py worker distribution
+│   ├── setup.py                # Setuptools config for worker package staging
+│   ├── Dockerfile              # Flex Template launcher container image definition
+│   ├── requirements.txt        # Beam SDK and GCP dependencies
+│   └── metadata.json           # Dataflow Flex Template UI parameters spec
 ├── dags/
-│   └── gcs_to_bq_dag.py        # Composer DAG with deferrable sensor, callbacks & DLQ quality check
-├── pipeline/
-│   ├── main.py                 # Apache Beam Python ETL script with custom counters & JSON logging
-│   ├── Dockerfile              # Flex Template launcher Dockerfile
-│   ├── requirements.txt        # Beam SDK & GCP dependencies
-│   └── metadata.json           # Dataflow Flex Template spec parameters
-├── monitoring/
-│   └── dashboard.json          # Cloud Monitoring unified dashboard JSON configuration
+│   └── gcs_to_bq_dag.py        # Cloud Composer DAG (Deferrable Sensor + Flex Template + DLQ Audit)
 ├── sql/
-│   └── create_tables.sql       # BigQuery schema setup for Target, DLQ & Logging datasets
-├── scripts/
-│   └── build_and_deploy.sh     # Automated build, template staging, DAG & dashboard deploy script
-└── README.md
+│   └── create_tables.sql       # BigQuery DDL (Target table, DLQ table, Partitioning & Clustering)
+├── tests/                      # Automated Unit Test Suite
+│   ├── test_pipeline.py        # Apache Beam TestPipeline unit tests (Valid, Corrupt, Mixed)
+│   └── test_dag.py             # Airflow DagBag unit tests (DAG compilation & task dependencies)
+├── scripts/                    # Deployment & Automation Scripts
+│   ├── build_and_deploy.sh     # Docker build, Artifact Registry push, & Flex Template staging
+│   ├── setup_gcp_resources.sh  # Provision GCS buckets, BQ datasets, tables & IAM
+│   └── run_gcp_test.sh         # End-to-end sandbox execution script
+├── monitoring/
+│   └── dashboard.json          # Cloud Monitoring Dashboard definition
+├── sample_data/
+│   ├── generate_sample_data.py # Mock CSV generator (Valid, Corrupt, Mixed batches)
+│   ├── valid_batch.csv
+│   └── corrupt_batch.csv
+└── docs/                       # Project Documentation & Verification Proofs
+    ├── implementation_plan.md  # System Architecture & Technical Specifications
+    ├── task.md                 # Project Checklist & Progress Log
+    └── walkthrough.md          # Empirical Test Proofs & Live Cloud Results
 ```
 
 ---
 
-## 🚀 Deployment Guide
+## 💻 Developer Quick-Start & Local Environment Setup
 
-### Step 1: Initialize BigQuery Datasets & Tables
+### 1. Prerequisites
+- **Python 3.11+**
+- **Google Cloud SDK (`gcloud`)** authenticated with active GCP credentials (`gcloud auth login` and `gcloud auth application-default login`).
+- **Docker** (for building Flex Template launcher container images).
+
+### 2. Local Virtual Environment Setup
 ```bash
-bq query --use_legacy_sql=false < sql/create_tables.sql
+# Clone the repository
+git clone git@github.com:pparthas83/data_ingestion_pipeline_demo.git
+cd data_ingestion_pipeline_demo
+
+# Create virtual environment and install dependencies
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r pipeline/requirements.txt
+pip install apache-airflow apache-airflow-providers-google apache-airflow-providers-apache-beam
+
+# Initialize local Airflow metadata database (for DAG parsing test)
+airflow db migrate
 ```
 
-### Step 2: Build & Deploy All Pipeline Components
-Set your GCP environment variables and run the deployment script:
-```bash
-export GCP_PROJECT_ID="your-gcp-project-id"
-export GCP_REGION="us-central1"
-export TEMP_BUCKET="your-gcs-temp-bucket"
-export COMPOSER_DAG_BUCKET="us-central1-my-composer-bucket-gcs"
+---
 
+## 🧪 How to Run Tests (Offline Verification)
+
+We provide a complete automated unit test suite that validates **Beam pipeline transforms** and **Airflow DAG compilation** locally without incurring GCP cloud costs.
+
+### Run All Unit Tests
+```bash
+.venv/bin/python3 -m unittest discover -s tests -v
+```
+
+### Expected Output
+```text
+test_dag_loaded (test_dag.TestGCSNotificationDAG.test_dag_loaded) ... ok
+test_dag_structure_and_task_count (test_dag.TestGCSNotificationDAG.test_dag_structure_and_task_count) ... ok
+test_task_dependencies (test_dag.TestGCSNotificationDAG.test_task_dependencies) ... ok
+test_failure_scenario_all_corrupt_records (test_pipeline.TestGCSIngestionPipeline) ... ok
+test_mixed_records_routing (test_pipeline.TestGCSIngestionPipeline) ... ok
+test_success_scenario_all_valid_records (test_pipeline.TestGCSIngestionPipeline) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 6.350s
+
+OK
+```
+
+---
+
+## 🚀 How to Deploy to GCP Cloud
+
+### Step 1: Set Environment Variables
+```bash
+export GCP_PROJECT_ID="pradeep-demo-1"
+export GCP_REGION="us-central1"
+export RAW_DATA_BUCKET="pradeep-demo-1-raw-data"
+export TEMP_BUCKET="pradeep-demo-1-temp"
+export COMPOSER_DAG_BUCKET="gs://us-central1-my-composer-bucket/dags"  # Optional if using Composer
+```
+
+### Step 2: Provision GCP Resources (BigQuery Tables & Buckets)
+```bash
+./scripts/setup_gcp_resources.sh
+```
+
+### Step 3: Build & Stage Dataflow Flex Template
+This builds the Docker launcher image, pushes it to Artifact Registry (`us-central1-docker.pkg.dev/pradeep-demo-1/dataflow-templates/gcs-to-bq-etl:v1.0.0`), and uploads the Flex Template spec JSON to `gs://pradeep-demo-1-temp/templates/gcs_to_bq_template.json`:
+```bash
 ./scripts/build_and_deploy.sh
 ```
 
+### Step 4: Deploy Cloud Monitoring Dashboard
+```bash
+gcloud monitoring dashboards create \
+    --config-from-file=monitoring/dashboard.json \
+    --project $GCP_PROJECT_ID
+```
+
 ---
 
-## 📊 Viewing Observability & Metrics
+## ☁️ How to Run & Test in GCP Cloud
 
-1. **Cloud Monitoring Dashboard**:
-   Navigate to **GCP Console > Monitoring > Dashboards** and select `GCS to BigQuery Ingestion - Observability Dashboard`.
-2. **BigQuery Audit Log Sink**:
-   Query pipeline logs stored in `logs_ds`:
-   ```sql
-   SELECT timestamp, jsonPayload.event, jsonPayload.error_message
-   FROM `your-project.logs_ds.dataflow_step_*`
-   WHERE jsonPayload.event = 'dlq_record_captured'
-   ORDER BY timestamp DESC LIMIT 50;
-   ```
+### Option A: Run End-to-End Test Script
+Generates mock CSV batches, uploads them to GCS landing, and launches the Dataflow Flex Template:
+```bash
+./scripts/run_gcp_test.sh
+```
+
+### Option B: Trigger Dataflow Job Directly via `gcloud`
+```bash
+gcloud dataflow flex-template run "gcs-to-bq-etl-manual-run" \
+    --template-file-gcs-location="gs://${TEMP_BUCKET}/templates/gcs_to_bq_template.json" \
+    --region="${GCP_REGION}" \
+    --parameters input_pattern="gs://${RAW_DATA_BUCKET}/landing/20260827/*.csv" \
+    --parameters output_table="${GCP_PROJECT_ID}:analytics_ds.target_records" \
+    --parameters dlq_table="${GCP_PROJECT_ID}:analytics_ds.target_records_dlq" \
+    --project="${GCP_PROJECT_ID}"
+```
+
+---
+
+## 📊 Verification & BigQuery Results
+
+Once the Dataflow job status reaches **`JOB_STATE_DONE`**, verify row counts in BigQuery:
+
+```sql
+-- Query Target Table (Valid Rows)
+SELECT COUNT(1) AS valid_count FROM `pradeep-demo-1.analytics_ds.target_records`;
+
+-- Query DLQ Table (Corrupt Rows)
+SELECT raw_record, error_message, source_file, failed_at
+FROM `pradeep-demo-1.analytics_ds.target_records_dlq`
+ORDER BY failed_at DESC;
+```
+
+---
+
+## 📑 Additional Documentation & Proofs
+
+- [Implementation Plan](docs/implementation_plan.md): Technical architecture and BigQuery DDL schemas.
+- [Task Progress Checklist](docs/task.md): Component breakdown and verification steps.
+- [Verification Walkthrough](docs/walkthrough.md): Empirical proof of live Dataflow executions (`gcs-to-bq-etl-1787941124`) and unit test results.
