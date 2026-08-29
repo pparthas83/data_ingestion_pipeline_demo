@@ -1,10 +1,8 @@
 # Copyright 2026 ConEd / GCP Data Engineering
 # GCS to BigQuery ETL Dataflow Flex Template Pipeline.
 
-import json
 import logging
 import os
-from datetime import datetime, timezone
 
 import apache_beam as beam
 from apache_beam.io.gcp.bigquery import BigQueryDisposition, WriteToBigQuery

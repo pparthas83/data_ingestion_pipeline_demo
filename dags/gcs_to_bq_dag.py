@@ -8,13 +8,19 @@ Description: Cloud Composer orchestration DAG featuring:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from airflow import DAG
 from airflow.models import Variable
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
-from airflow.providers.google.cloud.operators.dataflow import DataflowStartFlexTemplateOperator
-from airflow.providers.google.cloud.sensors.gcs import GCSObjectsWithPrefixExistenceSensor
+from airflow.providers.google.cloud.operators.dataflow import (
+    DataflowStartFlexTemplateOperator,
+)
+from airflow.providers.google.cloud.sensors.gcs import (
+    GCSObjectsWithPrefixExistenceSensor,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def on_failure_callback(context):
@@ -35,14 +41,14 @@ def on_failure_callback(context):
         "execution_date": str(execution_date),
         "exception": str(exception),
     }
-    logging.error(f"[ALERT CALLBACK] Task Failure Incident: {alert_message}")
+    logger.error(f"[ALERT CALLBACK] Task Failure Incident: {alert_message}")
 
 
 def sla_miss_callback(dag, task_list, blocking_task_list, slas, blocking_tis):
     """
     Callback executed when execution exceeds defined SLA window.
     """
-    logging.warning(f"[SLA MISS CALLBACK] Pipeline Execution SLA breached for DAG: {dag.dag_id}")
+    logger.warning(f"[SLA MISS CALLBACK] Pipeline Execution SLA breached for DAG: {dag.dag_id}")
 
 
 # Default DAG Arguments
@@ -80,7 +86,7 @@ with DAG(
     default_args=default_args,
     description='Orchestrate GCS to BQ ETL via Dataflow Flex Template with Deferrable Sensor & Quality Auditing',
     schedule='0 2 * * *',  # Daily at 02:00 UTC
-    start_date=datetime(2026, 1, 1),
+    start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     max_active_runs=1,
     sla_miss_callback=sla_miss_callback,
@@ -141,7 +147,7 @@ with DAG(
                     IF dlq_count > {MAX_DLQ_THRESHOLD} THEN
                         ERROR(CONCAT('Data Quality Threshold Breach: DLQ record count (', CAST(dlq_count AS STRING), ') exceeds allowed threshold of {MAX_DLQ_THRESHOLD}'));
                     END IF;
-                """,
+                """,  # nosec B608
                 "useLegacySql": False,
             }
         },
