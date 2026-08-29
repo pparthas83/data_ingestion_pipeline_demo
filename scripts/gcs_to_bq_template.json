@@ -1,0 +1,34 @@
+{
+    "defaultEnvironment": {},
+    "image": "us-central1-docker.pkg.dev/pradeep-demo-1/dataflow-templates/gcs-to-bq-etl:latest",
+    "metadata": {
+        "description": "Custom Apache Beam Python Flex Template pipeline ingesting GCS files into BigQuery with DLQ error handling.",
+        "name": "GCS to BigQuery Batch ETL with DLQ",
+        "parameters": [
+            {
+                "helpText": "GCS wildcard pattern for input files, e.g. gs://bucket/landing/20260827/*.csv",
+                "isOptional": false,
+                "label": "GCS Input Pattern",
+                "name": "input_pattern",
+                "paramType": "TEXT"
+            },
+            {
+                "helpText": "Full BigQuery table identifier, e.g. project_id:dataset_id.target_table",
+                "isOptional": false,
+                "label": "BigQuery Target Table",
+                "name": "output_table",
+                "paramType": "TEXT"
+            },
+            {
+                "helpText": "Full BigQuery DLQ table identifier, e.g. project_id:dataset_id.target_table_dlq",
+                "isOptional": false,
+                "label": "BigQuery DLQ Table",
+                "name": "dlq_table",
+                "paramType": "TEXT"
+            }
+        ]
+    },
+    "sdkInfo": {
+        "language": "PYTHON"
+    }
+}

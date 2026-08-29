@@ -36,7 +36,6 @@ def on_failure_callback(context):
         "exception": str(exception),
     }
     logging.error(f"[ALERT CALLBACK] Task Failure Incident: {alert_message}")
-    # In production, publish alert_message to Cloud Pub/Sub or Slack Webhook
 
 
 def sla_miss_callback(dag, task_list, blocking_task_list, slas, blocking_tis):
@@ -58,18 +57,18 @@ default_args = {
     'sla': timedelta(minutes=45),  # SLA Alert if DAG run takes > 45 minutes
 }
 
-# Environment & Variable Configuration
-GCP_PROJECT_ID = Variable.get("gcp_project_id", default_var="YOUR_GCP_PROJECT_ID")
+# Environment & Variable Configuration (with fallbacks so DAG parses cleanly)
+GCP_PROJECT_ID = Variable.get("gcp_project_id", default_var="pradeep-demo-1")
 GCP_REGION = Variable.get("gcp_region", default_var="us-central1")
-RAW_DATA_BUCKET = Variable.get("raw_data_bucket", default_var="YOUR_RAW_DATA_BUCKET")
-TEMP_BUCKET = Variable.get("temp_bucket", default_var="YOUR_TEMP_BUCKET")
+RAW_DATA_BUCKET = Variable.get("raw_data_bucket", default_var="pradeep-demo-1-raw-data")
+TEMP_BUCKET = Variable.get("temp_bucket", default_var="pradeep-demo-1-temp")
 FLEX_TEMPLATE_SPEC_GCS = Variable.get(
     "flex_template_spec_gcs",
-    default_var="gs://YOUR_TEMP_BUCKET/templates/gcs_to_bq_spec.json"
+    default_var="gs://pradeep-demo-1-temp/templates/gcs_to_bq_template.json"
 )
 DATAFLOW_SERVICE_ACCOUNT = Variable.get(
     "dataflow_service_account",
-    default_var="dataflow-worker-sa@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com"
+    default_var="832497031659-compute@developer.gserviceaccount.com"
 )
 
 TARGET_DATASET = Variable.get("target_dataset", default_var="analytics_ds")
@@ -80,7 +79,7 @@ with DAG(
     dag_id='gcs_to_bq_dataflow_etl',
     default_args=default_args,
     description='Orchestrate GCS to BQ ETL via Dataflow Flex Template with Deferrable Sensor & Quality Auditing',
-    schedule_interval='0 2 * * *',  # Daily at 02:00 UTC
+    schedule='0 2 * * *',  # Daily at 02:00 UTC
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
@@ -103,7 +102,7 @@ with DAG(
         task_id='launch_dataflow_flex_template',
         project_id=GCP_PROJECT_ID,
         location=GCP_REGION,
-        wait_for_pipeline=True,
+        wait_until_finished=True,
         body={
             "launchParameter": {
                 "jobName": "gcs-to-bq-etl-{{ ds_nodash }}",
@@ -119,6 +118,7 @@ with DAG(
                     "serviceAccountEmail": DATAFLOW_SERVICE_ACCOUNT,
                     "ipConfiguration": "WORKER_IP_PRIVATE",
                     "network": Variable.get("vpc_network", default_var="pradeep-demo-vpc"),
+                    "subnetwork": Variable.get("vpc_subnetwork", default_var="regions/us-central1/subnetworks/pradeep-demo-vpc"),
                 },
             }
         },

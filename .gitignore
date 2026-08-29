@@ -16,10 +16,14 @@ __pycache__/
 *.tar.gz
 *.tgz
 *.log
+*.egg-info/
+build/
+dist/
 
 # Sensitive Credentials & Keys
 *.json
 !pipeline/metadata.json
 !monitoring/dashboard.json
+!scripts/gcs_to_bq_template.json
 *.pem
 *.key
