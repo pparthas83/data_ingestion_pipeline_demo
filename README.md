@@ -242,8 +242,10 @@ ORDER BY failed_at DESC;
 
 ## 📑 Additional Documentation & Proofs
 
+- [Target Audience & Beneficiaries](docs/who_is_it_for.md): Detailed guide on who benefits from this repository and primary use cases solved.
 - [Implementation Plan](docs/implementation_plan.md): Technical architecture and BigQuery DDL schemas.
 - [Task Progress Checklist](docs/task.md): Component breakdown and verification steps.
 - [Verification Walkthrough](docs/walkthrough.md): Empirical proof of live Dataflow executions and unit test results.
 - [Code Scan & Security Audit Results](docs/code_scan_and_test_results.md): Official bandit SAST security scan, ruff linter, and unit test execution report.
+
 
