@@ -15,7 +15,36 @@ The primary objective of this pipeline is to ingest CSV transactions landing in 
 
 ---
 
+## 📋 Expected CSV Input Structure & Validation Rules
+
+The pipeline is currently coded and tested for a **4-column CSV schema**:
+
+```csv
+id,timestamp,category,amount
+TXN-100001,2026-08-27 10:00:00,ELECTRONICS,150.00
+TXN-100002,2026-08-27 10:05:00,HOME,42.50
+```
+
+### Field Definitions & Validation Rules
+
+| Column Index | Field Name | Target BigQuery Type | Requirement / Validation Rule |
+| :---: | :--- | :--- | :--- |
+| `0` | `id` | `STRING` | **REQUIRED**. Cannot be empty or whitespace. |
+| `1` | `timestamp` | `TIMESTAMP` | **REQUIRED**. Must match ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`) or standard format (`YYYY-MM-DD HH:MM:SS`). |
+| `2` | `category` | `STRING` | **OPTIONAL**. Product/transaction category. Defaults to `UNSPECIFIED` if empty. |
+| `3` | `amount` | `NUMERIC` | **REQUIRED**. Must be a valid non-negative number (`>= 0.00`). |
+
+### Dead Letter Queue (DLQ) Routing
+If a CSV row violates any rule above (e.g. empty ID, invalid date string, negative amount, or fewer than 4 columns), the transform catches the exception and routes the row to the **Dead Letter Queue (DLQ)** table (`analytics_ds.target_records_dlq`) with the raw text, error message, and source file metadata.
+
+> [!NOTE]
+> **Adapting for Different or Dynamic CSV Schemas**:
+> To support a different CSV structure or dynamic column layouts, update `ParseAndValidateCSVDoFn` in [pipeline/gcs_etl/transforms.py](file:///usr/local/google/home/pradeepsarathy/AntiGravity_Projects/Project_3/coned_demo/pipeline/gcs_etl/transforms.py) or use `csv.DictReader` to parse headers dynamically.
+
+---
+
 ## 🏗️ End-to-End Architecture
+
 
 ```text
                                 ┌───────────────────────────────────┐

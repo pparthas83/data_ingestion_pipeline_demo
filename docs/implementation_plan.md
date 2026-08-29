@@ -26,7 +26,18 @@ Building an enterprise-grade batch data ingestion pipeline using **GCS, Dataflow
 
 ## 📋 Component Specifications
 
-### 1. BigQuery Dataset & Tables (`analytics_ds`)
+### 1. Expected CSV Input Schema (`id, timestamp, category, amount`)
+- **Format**: Comma-Separated Values (CSV)
+- **Columns**: `id` (string), `timestamp` (datetime/iso), `category` (string), `amount` (float)
+- **Validation Rules**:
+  - `id`: Non-empty required string.
+  - `timestamp`: Datetime formatted as `YYYY-MM-DD HH:MM:SS` or ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`).
+  - `category`: String (defaults to `UNSPECIFIED` if blank).
+  - `amount`: Non-negative numeric (`>= 0.00`).
+- **DLQ Trigger**: Any row violating these constraints is captured and written to `analytics_ds.target_records_dlq`.
+
+### 2. BigQuery Dataset & Tables (`analytics_ds`)
+
 
 #### Target Table: `analytics_ds.target_records`
 - **Partitioning**: Day-partitioned by `DATE(timestamp)`
