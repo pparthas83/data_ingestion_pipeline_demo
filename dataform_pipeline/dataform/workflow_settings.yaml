@@ -1,0 +1,5 @@
+defaultProject: YOUR_GCP_PROJECT_ID
+defaultLocation: us-central1
+defaultDataset: silver2_ds
+defaultAssertionDataset: dataform_assertions
+dataformCoreVersion: 3.0.0

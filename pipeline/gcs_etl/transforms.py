@@ -38,8 +38,8 @@ class ParseAndValidateCSVDoFn(beam.DoFn):
         self.processed_counter.inc()
         raw_line = element.strip() if isinstance(element, str) else str(element)
 
-        if not raw_line:
-            return  # Skip empty lines
+        if not raw_line or raw_line.lower().startswith("id,timestamp"):
+            return  # Skip empty lines and header row
 
         try:
             fields = [f.strip() for f in raw_line.split(",")]
@@ -103,3 +103,7 @@ class ParseAndValidateCSVDoFn(beam.DoFn):
                 "failed_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             }
             yield beam.pvalue.TaggedOutput(self.OUTPUT_TAG_DLQ, dlq_record)
+
+
+ProcessAndValidateRow = ParseAndValidateCSVDoFn
+

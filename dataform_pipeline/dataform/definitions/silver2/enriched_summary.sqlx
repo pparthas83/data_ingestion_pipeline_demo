@@ -1,0 +1,31 @@
+config {
+  type: "incremental",
+  schema: "silver2_ds",
+  name: "enriched_summary",
+  description: "Aggregated transaction metrics per day and category.",
+  bigquery: {
+    partitionBy: "transaction_date",
+    clusterBy: ["category"]
+  },
+  uniqueKey: ["transaction_date", "category"],
+  assertions: {
+    uniqueKey: ["transaction_date", "category"],
+    nonNull: ["transaction_date", "category", "total_amount"]
+  },
+  tags: ["silver2_transform"]
+}
+
+SELECT
+  DATE(timestamp) AS transaction_date,
+  category,
+  COUNT(1) AS total_transactions,
+  SUM(amount) AS total_amount,
+  AVG(amount) AS avg_transaction_amount,
+  CURRENT_TIMESTAMP() AS updated_at
+FROM
+  ${ref("validated_transactions")}
+
+${when(incremental(), `WHERE DATE(timestamp) >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)`)}
+
+GROUP BY
+  1, 2

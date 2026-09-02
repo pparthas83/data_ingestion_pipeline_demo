@@ -113,6 +113,12 @@ If a CSV row violates any rule above (e.g. empty ID, invalid date string, negati
 │   ├── generate_sample_data.py # Mock CSV generator (Valid, Corrupt, Mixed batches)
 │   ├── valid_batch.csv
 │   └── corrupt_batch.csv
+├── dataform_pipeline/          # Standalone BigQuery Dataform Core & Composer Transformation Pipeline
+│   ├── README.md               # Architecture and usage guide for Dataform pipeline
+│   ├── dataform/               # Dataform Core SQLX definitions, settings, & assertions
+│   ├── dags/                   # Cloud Composer DAG for Dataform orchestration
+│   ├── scripts/                # Dataform pipeline deployment script
+│   └── tests/                  # Standalone Dataform Airflow DAG unit tests
 └── docs/                       # Project Documentation & Verification Proofs
     ├── implementation_plan.md  # System Architecture & Technical Specifications
     ├── task.md                 # Project Checklist & Progress Log
@@ -242,10 +248,12 @@ ORDER BY failed_at DESC;
 
 ## 📑 Additional Documentation & Proofs
 
+- [Medallion Architecture Design Guide](docs/medallion_pipeline_design.md): End-to-end design for Bronze ➔ Silver 1 ➔ Silver 2 pipeline across 5 GCP environments.
 - [Target Audience & Beneficiaries](docs/who_is_it_for.md): Detailed guide on who benefits from this repository and primary use cases solved.
 - [Implementation Plan](docs/implementation_plan.md): Technical architecture and BigQuery DDL schemas.
 - [Task Progress Checklist](docs/task.md): Component breakdown and verification steps.
 - [Verification Walkthrough](docs/walkthrough.md): Empirical proof of live Dataflow executions and unit test results.
 - [Code Scan & Security Audit Results](docs/code_scan_and_test_results.md): Official bandit SAST security scan, ruff linter, and unit test execution report.
+
 
 

@@ -1,0 +1,7 @@
+config {
+  type: "declaration",
+  database: dataform.projectConfig.defaultDatabase,
+  schema: "silver1_ds",
+  name: "validated_transactions",
+  description: "Cleaned and validated transaction source table landing from upstream ingestion."
+}

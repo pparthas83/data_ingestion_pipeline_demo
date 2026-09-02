@@ -1,0 +1,15 @@
+config {
+  type: "assertion",
+  description: "Verify that transaction_date and category combinations are strictly unique in silver2_ds.enriched_summary."
+}
+
+SELECT
+  transaction_date,
+  category,
+  COUNT(1) AS row_count
+FROM
+  ${ref("enriched_summary")}
+GROUP BY
+  1, 2
+HAVING
+  row_count > 1
